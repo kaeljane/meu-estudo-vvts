@@ -108,3 +108,35 @@ sequenceDiagram
   * **Vazamentos de Memória sob Alta Carga (Memory Leaks):** Revela se contêineres de execução do *Sandbox* não destruídos adequadamente acumulam memória no servidor até paralisar o sistema operacional.
   * **Esgotamento do Pool de Conexões:** Identifica gargalos de banco de dados ou mensageria que causam erros fatais (`HTTP 500`) em vez de enfileiramento controlado.
  
+## 4.4 Teste de Desempenho (Performance Testing)
+
+### 1. Diagrama de Sequência UML
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Benchmark as Ferramenta de Benchmark
+    participant API as SubmissionAPI
+    participant Core as Engine de Julgamento
+    participant Metrics as Coletor de Latência (APM)
+
+    Benchmark->>API: Envia lote de submissões sob carga nominal (100 req/s)
+    API->>Core: Processa compilação e avaliação
+    Core-->>API: Devolve veredito
+    API-->>Benchmark: Resposta 200 OK
+    Metrics->>API: Registra métricas de desempenho
+    Note over Metrics: Valida SLA: Latência p95 < 800ms / CPU < 65%
+```
+### 2. Explicação Textual do Cenário
+
+* **Contexto:** O Teste de Desempenho mede a eficiência, a latência de resposta e o consumo de recursos do Julgador Automático sob volume de tráfego esperado e regular, visando homologar o sistema contra os Acordos de Nível de Serviço (SLAs) definidos.
+
+* **Como a abordagem é aplicada:**
+  * Ferramentas de monitoramento de performance (APM) acompanham a execução de um volume constante e previsível de submissões em C++.
+  * Medem-se o tempo total de ciclo (*throughput*), a latência do endpoint da API nos percentis p90, p95 e p99, e o overhead introduzido pela criação e destruição dos containers do *SandboxRunner*.
+  * O teste valida se o tempo decorrido entre o envio do código pelo competidor e o retorno do veredito permanece dentro do limite estabelecido para a plataforma.
+
+* **Objetivo do Teste e Defeitos Revelados:**
+  * **Objetivo:** Garantir uma experiência de uso fluida e responsiva durante o uso cotidiano do julgador.
+  * **Gargalos de I/O em Disco:** Identifica lentidão excessiva no acesso aos arquivos de gabarito durante a comparação do `VerdictEvaluator`.
+  * **Overhead de Containerização:** Revela se a inicialização do ambiente isolado está consumindo tempo desproporcional em relação ao tempo real de execução do algoritmo C++ do usuário.
