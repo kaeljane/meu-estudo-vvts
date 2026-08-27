@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    actor Dev as Desenvolvedor
+    participant Git as Repositório / PR
+    participant Suite as Suíte de Regressão
+    participant Evaluator as VerdictEvaluator Refatorado
+
+    Dev->>Git: Envia PR com refatoração do algoritmo de veredito
+    Git->>Suite: Dispara execução da suíte de testes históricos
+    Note over Suite: Executa bateria com 100+ casos de submissões antigas
+    Suite->>Evaluator: Submete entradas históricas (AC, WA, TLE, MLE, PE)
+    Evaluator-->>Suite: Retorna vereditos processados
+    Alt Vereditos correspondem ao gabarito histórico
+        Suite-->>Git: ✅ Regressão aprovada (Nenhum efeito colateral)
+    Else Algum veredito diverge do histórico
+        Suite-->>Git: ❌ Regressão falhou (Efeito colateral detectado)
+    End
