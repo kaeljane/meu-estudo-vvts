@@ -73,3 +73,38 @@ sequenceDiagram
   * **Brechas no Isolamento de Processos (Sandbox Escape):** Revela se permissões do ambiente do container estão frouxas, permitindo escalada de privilégios ou navegação pela árvore de diretórios do servidor.
   * **Vazamento de Gabaritos:** Detecta se o código do usuário consegue acessar os caminhos de memória ou arquivos temporários do servidor onde ficam armazenadas as saídas oficiais (*output files*) do problema durante a validação.
  
+## 4.3 Teste de Estresse (Stress Testing)
+
+### 1. Diagrama de Sequência UML
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Gen as Gerador de Carga (k6 / Locust)
+    participant API as SubmissionAPI
+    participant Queue as Fila (Redis)
+    participant Workers as Sandbox Workers Cluster
+
+    Gen->>API: Injeta 5.000 requisições/seg (Pico Extremo)
+    API->>Queue: Enfileira submissões rapidamente
+    Note over Queue: Fila atinge 95% da capacidade do buffer
+    API-->>Gen: Retorna 202 Accepted (Em Fila)
+    Note over Workers: Workers operam a 100% de CPU/Memória sem travar
+    Gen->>API: Cessa a sobrecarga
+    Queue->>Workers: Drena requisições acumuladas gradualmente
+    Note over Queue: Sistema retorna ao estado estável normal
+```
+### 2. Explicação Textual do Cenário
+
+* **Contexto:** O Teste de Estresse avalia o comportamento do Julgador Automático em condições limite de carga, excedendo os parâmetros normais de operação (ex: disparos massivos de submissões no início ou final de maratonas de programação), para identificar o ponto de quebra da infraestrutura e verificar a capacidade de autorrecuperação.
+
+* **Como a abordagem é aplicada:**
+  * Ferramentas de geração de carga (como k6 ou Locust) injetam milhares de requisições concorrentes de submissão em um curto intervalo de tempo.
+  * O teste força o esgotamento dos recursos do servidor (CPU, memória RAM, conexões do banco de dados e capacidade do buffer da fila).
+  * Avalia-se se o sistema aplica *degradação graciosa* (mantendo requisições em fila com status `202 Accepted`) ou se sofre queda catastrófica (*crash* sem resposta).
+
+* **Objetivo do Teste e Defeitos Revelados:**
+  * **Objetivo:** Determinar o limite máximo de escalabilidade do julgador e garantir que o sistema recupere seu estado normal assim que a sobrecarga for removida.
+  * **Vazamentos de Memória sob Alta Carga (Memory Leaks):** Revela se contêineres de execução do *Sandbox* não destruídos adequadamente acumulam memória no servidor até paralisar o sistema operacional.
+  * **Esgotamento do Pool de Conexões:** Identifica gargalos de banco de dados ou mensageria que causam erros fatais (`HTTP 500`) em vez de enfileiramento controlado.
+ 
