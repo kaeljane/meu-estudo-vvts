@@ -1,0 +1,22 @@
+classDiagram
+    class SandboxDriver {
+        <<driver>>
+        +executarBateriaDeTestes()
+    }
+
+    class ConstraintsLoader {
+        +loadLimits(problemId) ProblemConstraints
+    }
+
+    class SandboxRunner {
+        +runInSandbox(sourceCode, constraints) ExecutionResult
+    }
+
+    class VerdictEvaluator {
+        +evaluate(metrics, constraints, userOutput, expectedOutput) Verdict
+    }
+
+    SandboxDriver ..> ConstraintsLoader : dispara
+    SandboxDriver ..> SandboxRunner : dispara
+    SandboxDriver ..> VerdictEvaluator : dispara
+    SandboxRunner ..> ConstraintsLoader : utiliza dados
