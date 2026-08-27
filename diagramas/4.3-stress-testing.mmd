@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor Gen as Gerador de Carga (k6 / Locust)
+    participant API as SubmissionAPI
+    participant Queue as Fila (Redis)
+    participant Workers as Sandbox Workers Cluster
+
+    Gen->>API: Injeta 5.000 requisições/seg (Pico Extremo)
+    API->>Queue: Enfileira submissões rapidamente
+    Note over Queue: Fila atinge 95% da capacidade do buffer
+    API-->>Gen: Retorna 202 Accepted (Em Fila)
+    Note over Workers: Workers operam a 100% de CPU/Memória sem travar
+    Gen->>API: Cessa a sobrecarga
+    Queue->>Workers: Drena requisições acumuladas gradualmente
+    Note over Queue: Sistema retorna ao estado estável normal
