@@ -40,4 +40,36 @@ sequenceDiagram
   * **Incapacidade de Failover Automático:** Revela se a perda do nó primário trava toda a API do julgador exigindo intervenção manual da equipe de infraestrutura.
   * **Inconsistência de Estado/Perda de Dados:** Detecta se submissões processadas imediatamente antes da queda sumiram da base de dados ou ficaram presas em estado indeterminado (ex: mantidas como "Em Processamento" indefinidamente).
  
-  * 
+## 4.2 Teste de Segurança (Security Testing)
+
+### 1. Diagrama de Sequência UML
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Attacker as Atacante / Malicioso
+    participant API as SubmissionAPI
+    participant Sec as Security/Sandbox Shield
+    participant OS as Sistema Operacional (Hospedeiro)
+
+    Attacker->>API: Submete C++ com chamada 'system("cat /etc/passwd")'
+    API->>Sec: Envia binário para execução isolada
+    Note over Sec: Inspeciona syscalls via seccomp / cgroups
+    Sec->>OS: Tenta executar chamada proibida (SYS_execve)
+    OS-->>Sec: Bloqueia operação (Permission Denied)
+    Sec-->>API: Registra violação de segurança
+    API-->>Attacker: Retorna veredito 'Restricted System Call / Security Violation'
+```
+### 2. Explicação Textual do Cenário
+
+* **Contexto:** O Teste de Segurança valida se o Julgador Automático é capaz de neutralizar tentativas de ataques maliciosos embarcados nos códigos submetidos pelos usuários, garantindo a proteção dos dados do sistema hospedeiro, dos gabaritos fechados e da rede interna.
+
+* **Como a abordagem é aplicada:**
+  * Submetem-se binários compilados em C++ contendo instruções maliciosas intencionais, tais como: leitura de arquivos sensíveis do SO hospedeiro, alocação abusiva de processos (*fork bomb*), abertura de sockets para conexões externas não autorizadas ou acesso a arquivos de teste de outros problemas.
+  * O teste avalia se as camadas de isolamento (*seccomp profiles*, namespaces e *Linux cgroups*) interceptam as chamadas de sistema restritas (*syscalls*) e abortam a execução do programa imediatamente.
+
+* **Objetivo do Teste e Defeitos Revelados:**
+  * **Objetivo:** Garantir a confidencialidade, integridade e isolamento absoluto do ambiente do julgador contra execuções arbitrárias de código.
+  * **Brechas no Isolamento de Processos (Sandbox Escape):** Revela se permissões do ambiente do container estão frouxas, permitindo escalada de privilégios ou navegação pela árvore de diretórios do servidor.
+  * **Vazamento de Gabaritos:** Detecta se o código do usuário consegue acessar os caminhos de memória ou arquivos temporários do servidor onde ficam armazenadas as saídas oficiais (*output files*) do problema durante a validação.
+ 
