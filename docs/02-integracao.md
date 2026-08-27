@@ -41,3 +41,53 @@ sequenceDiagram
   * **Incompatibilidades de Payload/Tipagem:** Detecta divergências de formato de dados trafegados entre serviços (ex: IDs passados como `string` pela API e esperados como `integer` pela fila).
   * **Dessincronização de Timeouts:** Revela se o tempo de resposta e retenção da mensagem no `QueueManager` é incompatível com o tempo de compilação/execução no `SandboxRunner`.
   * **Dificuldade de Isolamento:** Demonstra a principal limitação da abordagem: caso ocorra um erro genérico durante o teste, é complexo rastrear se a falha se deu no transporte de dados, na execução do sandbox ou no banco de dados.
+
+## 2.2 Integração Incremental Top-Down (Descendente) com uso de Stubs
+
+### 1. Diagrama de Classes UML
+
+```mermaid
+classDiagram
+    class SubmissionController {
+        +submitCode(userId, problemId, code) SubmissionResponse
+    }
+
+    class IQueueManager {
+        <<interface>>
+        +pushToQueue(payload) Boolean
+    }
+
+    class QueueManagerStub {
+        <<stub>>
+        +pushToQueue(payload) Boolean
+        +simularFilaCheia() void
+    }
+
+    class IDatabase {
+        <<interface>>
+        +saveSubmission(data) String
+    }
+
+    class DatabaseStub {
+        <<stub>>
+        +saveSubmission(data) String
+    }
+
+    SubmissionController --> IQueueManager : utiliza
+    SubmissionController --> IDatabase : utiliza
+    QueueManagerStub ..|> IQueueManager : implementa
+    DatabaseStub ..|> IDatabase : implementa
+```
+### 2. Explicação Textual do Cenário
+
+* **Contexto:** Na abordagem Top-Down, a verificação começa no componente de mais alto nível da hierarquia (`SubmissionController`), que gerencia o recebimento de códigos C++. Como os serviços de fila e banco de dados podem estar indisponíveis ou em desenvolvimento, utilizamos *Stubs* para simular o comportamento dessas camadas inferiores.
+
+* **Como a abordagem é aplicada:**
+  * O controlador `SubmissionController` é instanciado em ambiente de teste real.
+  * Injetam-se as instâncias de `QueueManagerStub` e `DatabaseStub` no construtor do controlador através de suas interfaces (`IQueueManager` e `IDatabase`).
+  * O teste dispara chamadas para `submitCode()` e os *Stubs* retornam respostas pré-programadas em memória (ex: status de enfileiramento positivo e IDs de submissão sintéticos), permitindo exercitar a lógica do controlador sem dependências externas.
+
+* **Objetivo do Teste e Defeitos Revelados:**
+  * **Objetivo:** Garantir que o fluxo de decisão e roteamento da camada superior funcione perfeitamente antes do desenvolvimento completo da infraestrutura de baixo nível.
+  * **Falhas no Tratamento de Erros da API:** Permite testar como o controlador reage quando dependências inferiores falham (ex: configurando `simularFilaCheia()` no *Stub* para garantir que a API retorne código HTTP 503 adequadamente).
+  * **Incompatibilidade de Contrato de Interface:** Revela se os métodos chamados pelo controlador divergem das assinaturas definidas nas interfaces das dependências.
