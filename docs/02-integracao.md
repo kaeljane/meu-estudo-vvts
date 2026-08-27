@@ -133,3 +133,37 @@ classDiagram
   * **Objetivo:** Garantir que a camada crítica de execução e avaliação atômica processe submissões sem erros de comunicação interna antes da criação da camada controladora.
   * **Vazamento e Incompatibilidade de Streams:** Revela se a estrutura do objeto `ExecutionResult` retornado pelo `SandboxRunner` entrega o fluxo de `stdout` em formato compatível com a leitura esperada pelo `VerdictEvaluator`.
   * **Tratamento Incorreto de Limites Operacionais:** Permite identificar se exceções lançadas pelo `ConstraintsLoader` (ex: arquivo de restrição ausente) são tratadas adequadamente pelo `SandboxRunner` sem travar a execução do SO.
+
+## 2.4 Teste de Fumaça (Smoke Testing)
+
+### 1. Diagrama de Sequência UML
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor CI as Pipeline CI/CD
+    participant App as Julgador (API)
+    participant DB as Banco de Dados
+    participant Runner as Sandbox Runner
+
+    CI->>App: Healthcheck GET /health
+    App-->>CI: 200 OK (Serviço no ar)
+    CI->>App: Submete código mínimo "Hello World"
+    App->>DB: Checa conexão e grava submissão teste
+    App->>Runner: Solicita compilação básica
+    Runner-->>App: Retorna código compilado com sucesso
+    App-->>CI: Submissão aceita (Build Aprovado para testes profundos)
+```
+### 2. Explicação Textual do Cenário
+
+* **Contexto:** O Teste de Fumaça é executado como a primeira etapa do pipeline de Integração Contínua (CI/CD) após cada *deploy* ou alteração na base do Julgador Automático. O objetivo é verificar se os serviços essenciais do sistema estão operacionais antes de gastar recursos executando suítes de testes exaustivas.
+
+* **Como a abordagem é aplicada:**
+  * O pipeline dispara uma requisição de verificação de integridade (`GET /health`) para confirmar a disponibilidade da API.
+  * Em seguida, o pipeline submete um programa trivial em C++ (um "Hello World" básico) via endpoint de submissão.
+  * O teste valida se o sistema consegue realizar a conexão básica com o banco de dados, enviar o código para o `SandboxRunner` e compilar o binário sem travamentos ou erros de infraestrutura.
+
+* **Objetivo do Teste e Defeitos Revelados:**
+  * **Objetivo:** Identificar imediatamente falhas catastróficas em componentes críticos no início da esteira de integração, interrompendo o pipeline precocemente (*fail-fast*).
+  * **Falhas Gravíssimas de Infraestrutura:** Revela serviços caídos, portas de comunicação bloqueadas ou variáveis de ambiente/credenciais de banco de dados ausentes após o *deploy*.
+  * **Inoperância do Compilador:** Detecta a ausência do compilador C++ (`g++`) ou permissões incorretas de execução dentro do ambiente do `SandboxRunner`.
