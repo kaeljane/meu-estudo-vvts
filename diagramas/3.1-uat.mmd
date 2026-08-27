@@ -1,0 +1,11 @@
+sequenceDiagram
+    autonumber
+    actor User as Competidor / Maratonista
+    participant UI as Portal Web / Painel
+    participant System as Julgador Automático
+
+    User->>UI: Submete solução em C++ para o Problema A
+    UI->>System: Processa submissão
+    System-->>UI: Retorna payload do veredito
+    Note over UI: Valida Critérios de Aceitação (UAT)
+    UI-->>User: Exibe cartão com badge 'Accepted (AC)', tempo (12ms) e memória (3.2MB)
