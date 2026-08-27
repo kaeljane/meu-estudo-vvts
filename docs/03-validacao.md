@@ -65,3 +65,35 @@ sequenceDiagram
   * **Objetivo:** Descobrir e corrigir bugs críticos de usabilidade, regra de negócio e estabilidade interna antes do sistema ser exposto aos usuários finais.
   * **Vulnerabilidades de Isolamento:** Detecta se scripts em C++ conseguem acessar arquivos do sistema operacional hospedeiro fora da pasta do *Sandbox*.
   * **Comportamento Inesperado sob Erros de Runtime:** Revela se mensagens de erro brutas do compilador (*stack traces*) vazam na interface do usuário, expondo detalhes da arquitetura interna.
+
+## 3.3 Teste Beta (Beta Testing)
+
+### 1. Diagrama de Sequência UML
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor BetaUser as Grupo Beta (Alunos / Maratonistas)
+    participant UI as Portal Web (Produção Beta)
+    participant Core as Julgador Automático
+    participant Feedback as Módulo de Telemetria / Feedback
+
+    BetaUser->>UI: Submete código em C++ durante simulado real
+    UI->>Core: Processa submissão no ambiente real
+    Core-->>UI: Retorna veredito em tempo real
+    BetaUser->>UI: Reporta falha de carregamento no placar ou dúvida visual
+    UI->>Feedback: Registra bug / feedback e dados do navegador do usuário
+```
+### 2. Explicação Textual do Cenário
+
+* **Contexto:** O Teste Beta ocorre quando a versão pré-lançamento do Julgador Automático é distribuída para um grupo restrito de usuários finais reais (alunos e competidores de maratona). O sistema é implantado em ambiente real e utilizado de forma orgânica, sem intervenção direta ou supervisão contínua da equipe de desenvolvimento.
+
+* **Como a abordagem é aplicada:**
+  * O grupo de testes beta utiliza o julgador para resolver listas de exercícios ou participar de simulados curtos.
+  * O sistema coleta métricas de uso não estruturadas, relatórios automáticos de erro (*crash reports*) e *feedbacks* diretos enviados pelos competidores através da interface do portal.
+  * A equipe analisa o comportamento do sistema sob condições imprevisíveis de uso do usuário real antes de realizar a liberação geral (GA - *General Availability*).
+
+* **Objetivo do Teste e Defeitos Revelados:**
+  * **Objetivo:** Descobrir incompatibilidades e falhas de usabilidade que só se manifestam em cenários heterogêneos de uso real.
+  * **Incompatibilidades de Ambiente do Cliente:** Revela problemas de renderização do painel de submissões em diferentes navegadores, dispositivos móveis ou resoluções de tela.
+  * **Problemas de Usabilidade sob Estresse de Prova:** Identifica falhas como clareza insuficiente nas mensagens de erro mostradas aos competidores durante a competição ou lentidão percebida ao atualizar a tabela de classificação (*scoreboard*).
