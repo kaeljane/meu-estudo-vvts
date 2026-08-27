@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    actor CI as Pipeline CI/CD
+    participant App as Julgador (API)
+    participant DB as Banco de Dados
+    participant Runner as Sandbox Runner
+
+    CI->>App: Healthcheck GET /health
+    App-->>CI: 200 OK (Serviço no ar)
+    CI->>App: Submete código mínimo "Hello World"
+    App->>DB: Checa conexão e grava submissão teste
+    App->>Runner: Solicita compilação básica
+    Runner-->>App: Retorna código compilado com sucesso
+    App-->>CI: Submissão aceita (Build Aprovado para testes profundos)
