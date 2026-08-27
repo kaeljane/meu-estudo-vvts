@@ -1,0 +1,12 @@
+sequenceDiagram
+    autonumber
+    actor QA as Equipe de QA / Devs (Interna)
+    participant UI as Interface do Julgador
+    participant Backend as Core de Julgamento
+    participant Logger as Sistema de Logs / Telemetria
+
+    QA->>UI: Simula submissão com código malicioso (ex: Fork Bomb)
+    UI->>Backend: Processa submissão no Sandbox
+    Backend->>Logger: Registra estouro de recursos e captura de exceção
+    Backend-->>UI: Retorna veredito 'Runtime Error / Security Limit'
+    QA->>Logger: Analisa métricas internas de isolamento do container
