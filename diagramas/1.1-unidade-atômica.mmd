@@ -1,1 +1,34 @@
+classDiagram
+    class Verdict {
+        <<enumeration>>
+        AC
+        WA
+        TLE
+        MLE
+        PE
+    }
 
+    class ExecutionMetrics {
+        +int time_used_ms
+        +int memory_used_kb
+    }
+
+    class ProblemConstraints {
+        +int time_limit_ms
+        +int memory_limit_kb
+    }
+
+    class VerdictEvaluator {
+        +evaluate(metrics, constraints, user_output, expected_output) Verdict
+        -_compare_outputs(user, expected) Verdict
+    }
+
+    class TestVerdictEvaluator {
+        +test_returns_tle_when_time_exceeds_limit()
+        +test_returns_pe_when_differences_are_only_formatting()
+    }
+
+    TestVerdictEvaluator ..> VerdictEvaluator : instancia e testa
+    VerdictEvaluator ..> ExecutionMetrics : utiliza
+    VerdictEvaluator ..> ProblemConstraints : utiliza
+    VerdictEvaluator ..> Verdict : retorna
