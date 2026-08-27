@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    actor Attacker as Atacante / Malicioso
+    participant API as SubmissionAPI
+    participant Sec as Security/Sandbox Shield
+    participant OS as Sistema Operacional (Hospedeiro)
+
+    Attacker->>API: Submete C++ com chamada 'system("cat /etc/passwd")'
+    API->>Sec: Envia binário para execução isolada
+    Note over Sec: Inspeciona syscalls via seccomp / cgroups
+    Sec->>OS: Tenta executar chamada proibida (SYS_execve)
+    OS-->>Sec: Bloqueia operação (Permission Denied)
+    Sec-->>API: Registra violação de segurança
+    API-->>Attacker: Retorna veredito 'Restricted System Call / Security Violation'
