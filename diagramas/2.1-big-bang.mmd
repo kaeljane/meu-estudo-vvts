@@ -1,1 +1,18 @@
+sequenceDiagram
+    autonumber
+    actor Usuario as Usuário/Atleta
+    participant API as SubmissionAPI
+    participant Queue as QueueManager
+    participant Sandbox as SandboxRunner
+    participant Evaluator as VerdictEvaluator
+    participant DB as Database
 
+    Usuario->>API: Envia código C++ (POST /submit)
+    API->>Queue: Enfileira submissão (push task)
+    Queue->>Sandbox: Consome submissão da fila
+    Note over Sandbox: Compila e executa o código em container isolado
+    Sandbox->>Evaluator: Envia métricas (tempo/memória) e saídas brutas (stdout)
+    Note over Evaluator: Compara a saída com o gabarito oficial
+    Evaluator->>DB: Persiste veredito final (AC, WA, TLE, etc.)
+    DB-->>API: Notifica conclusão do processamento
+    API-->>Usuario: Retorna status e veredito final
