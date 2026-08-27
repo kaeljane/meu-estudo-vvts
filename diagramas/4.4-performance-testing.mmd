@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    actor Benchmark as Ferramenta de Benchmark
+    participant API as SubmissionAPI
+    participant Core as Engine de Julgamento
+    participant Metrics as Coletor de Latência (APM)
+
+    Benchmark->>API: Envia lote de submissões sob carga nominal (100 req/s)
+    API->>Core: Processa compilação e avaliação
+    Core-->>API: Devolve veredito
+    API-->>Benchmark: Resposta 200 OK
+    Metrics->>API: Registra métricas de desempenho
+    Note over Metrics: Valida SLA: Latência p95 < 800ms / CPU < 65%
