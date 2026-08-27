@@ -1,0 +1,30 @@
+classDiagram
+    class SubmissionController {
+        +submitCode(userId, problemId, code) SubmissionResponse
+    }
+
+    class IQueueManager {
+        <<interface>>
+        +pushToQueue(payload) Boolean
+    }
+
+    class QueueManagerStub {
+        <<stub>>
+        +pushToQueue(payload) Boolean
+        +simularFilaCheia() void
+    }
+
+    class IDatabase {
+        <<interface>>
+        +saveSubmission(data) String
+    }
+
+    class DatabaseStub {
+        <<stub>>
+        +saveSubmission(data) String
+    }
+
+    SubmissionController --> IQueueManager : utiliza
+    SubmissionController --> IDatabase : utiliza
+    QueueManagerStub ..|> IQueueManager : implementa
+    DatabaseStub ..|> IDatabase : implementa
