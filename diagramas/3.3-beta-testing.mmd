@@ -1,0 +1,12 @@
+sequenceDiagram
+    autonumber
+    actor BetaUser as Grupo Beta (Alunos / Maratonistas)
+    participant UI as Portal Web (Produção Beta)
+    participant Core as Julgador Automático
+    participant Feedback as Módulo de Telemetria / Feedback
+
+    BetaUser->>UI: Submete código em C++ durante simulado real
+    UI->>Core: Processa submissão no ambiente real
+    Core-->>UI: Retorna veredito em tempo real
+    BetaUser->>UI: Reporta falha de carregamento no placar ou dúvida visual
+    UI->>Feedback: Registra bug / feedback e dados do navegador do usuário
