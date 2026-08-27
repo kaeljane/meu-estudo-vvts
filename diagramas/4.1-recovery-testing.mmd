@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor User as Competidor
+    participant App as API / Load Balancer
+    participant DB1 as Banco Primário (Master)
+    participant DB2 as Banco Secundário (Replica)
+
+    User->>App: Consulta status da submissão (GET /status)
+    App->>DB1: Leitura de dados do veredito
+    Note over DB1: ❌ Queda Abrupta (Crash / Hardware Fault)
+    DB1--xApp: Timeout / Conexão recusada
+    Note over App: Mecanismo de Failover detecta falha e redireciona
+    App->>DB2: Promove réplica / Redireciona consulta
+    DB2-->>App: Retorna dados do veredito com sucesso
+    App-->>User: Retorna status 200 OK sem interrupção percebida
