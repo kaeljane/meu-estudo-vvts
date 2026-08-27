@@ -33,3 +33,35 @@ sequenceDiagram
   * **Objetivo:** Confirmar se o software constrói a solução certa para as necessidades reais do usuário final.
   * **Incoerências na Apresentação de Resultados:** Revela se a interface do usuário falha em omitir detalhes confidenciais (ex: exibir o caso de teste fechado do gabarito para o aluno durante a prova, violando as regras da competição).
   * **Falta de Requisitos Funcionais Não Implementados:** Identifica se funcionalidades essenciais para o usuário, como a exportação do histórico de submissões em PDF ou a paginação do placar (*placar/scoreboard*), não foram entregues conforme a especificação de negócio.
+ 
+## 3.2 Teste Alfa (Alpha Testing)
+
+### 1. Diagrama de Sequência UML
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor QA as Equipe de QA / Devs (Interna)
+    participant UI as Interface do Julgador
+    participant Backend as Core de Julgamento
+    participant Logger as Sistema de Logs / Telemetria
+
+    QA->>UI: Simula submissão com código malicioso (ex: Fork Bomb)
+    UI->>Backend: Processa submissão no Sandbox
+    Backend->>Logger: Registra estouro de recursos e captura de exceção
+    Backend-->>UI: Retorna veredito 'Runtime Error / Security Limit'
+    QA->>Logger: Analisa métricas internas de isolamento do container
+```
+### 2. Explicação Textual do Cenário
+
+* **Contexto:** O Teste Alfa é realizado pela própria equipe interna de desenvolvimento e garantia de qualidade (QA) em um ambiente de homologação controlled, imediatamente antes do lançamento de uma versão pública. Ele avalia a estabilidade do Julgador Automático submetendo cenários de uso reais e extremos.
+
+* **Como a abordagem é aplicada:**
+  * Os analistas de QA assumem o papel de competidores e "tentam quebrar" o sistema intencionalmente.
+  * São submetidos códigos em C++ com comportamento malicioso (como chamadas de sistema proibidas, vazamentos intencionais de memória ou loops infinitos com alta concorrência).
+  * A equipe monitora a telemetria, logs de execução e métricas de isolamento do container em tempo real para verificar a resiliência da infraestrutura.
+
+* **Objetivo do Teste e Defeitos Revelados:**
+  * **Objetivo:** Descobrir e corrigir bugs críticos de usabilidade, regra de negócio e estabilidade interna antes do sistema ser exposto aos usuários finais.
+  * **Vulnerabilidades de Isolamento:** Detecta se scripts em C++ conseguem acessar arquivos do sistema operacional hospedeiro fora da pasta do *Sandbox*.
+  * **Comportamento Inesperado sob Erros de Runtime:** Revela se mensagens de erro brutas do compilador (*stack traces*) vazam na interface do usuário, expondo detalhes da arquitetura interna.
