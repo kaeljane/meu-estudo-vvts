@@ -167,3 +167,41 @@ sequenceDiagram
   * **Objetivo:** Identificar imediatamente falhas catastróficas em componentes críticos no início da esteira de integração, interrompendo o pipeline precocemente (*fail-fast*).
   * **Falhas Gravíssimas de Infraestrutura:** Revela serviços caídos, portas de comunicação bloqueadas ou variáveis de ambiente/credenciais de banco de dados ausentes após o *deploy*.
   * **Inoperância do Compilador:** Detecta a ausência do compilador C++ (`g++`) ou permissões incorretas de execução dentro do ambiente do `SandboxRunner`.
+
+## 2.5 Teste de Regressão
+
+### 1. Diagrama de Sequência UML
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Desenvolvedor
+    participant Git as Repositório / PR
+    participant Suite as Suíte de Regressão
+    participant Evaluator as VerdictEvaluator Refatorado
+
+    Dev->>Git: Envia PR com refatoração do algoritmo de veredito
+    Git->>Suite: Dispara execução da suíte de testes históricos
+    Note over Suite: Executa bateria com 100+ casos de submissões antigas
+    Suite->>Evaluator: Submete entradas históricas (AC, WA, TLE, MLE, PE)
+    Evaluator-->>Suite: Retorna vereditos processados
+    Alt Vereditos correspondem ao gabarito histórico
+        Suite-->>Git: ✅ Regressão aprovada (Nenhum efeito colateral)
+    Else Algum veredito diverge do histórico
+        Suite-->>Git: ❌ Regressão falhou (Efeito colateral detectado)
+    End
+```
+
+### 2. Explicação Textual do Cenário
+
+* **Contexto:** O Teste de Regressão é aplicado sempre que um módulo existente do Julgador Automático passa por refatoração, atualização de dependências ou correção de bugs. Seu propósito é assegurar que a alteração não introduziu efeitos colaterais indesejados em partes do sistema que funcionavam corretamente.
+
+* **Como a abordagem é aplicada:**
+  * Mantém-se uma suíte com um conjunto representativo de submissões históricas (arquivos de código C++ cujos vereditos de `Accepted`, `Wrong Answer`, `Time Limit Exceeded`, `Memory Limit Exceeded` e `Presentation Error` já são conhecidos e consolidados).
+  * Ao submeter um *Pull Request* alterando, por exemplo, a classe `VerdictEvaluator` para otimizar o tempo de comparação de saídas, a suíte de regressão roda automaticamente essa bateria histórica contra o novo código.
+  * O teste compara se 100% dos resultados atuais coincidem exatamente com o histórico estabelecido.
+
+* **Objetivo do Teste e Defeitos Revelados:**
+  * **Objetivo:** Garantir a estabilidade e a continuidade do comportamento do sistema ao longo do seu ciclo de evolução.
+  * **Efeitos Colaterais de Refatoração:** Identifica se uma melhoria na lógica de comparação textual para `Presentation Error` acidentalmente fez testes antigos com `Wrong Answer` passarem a ser classificados como `Accepted`.
+  * **Quebra de Contratos Antigos:** Revela se atualizações no compilador do `SandboxRunner` introduziram pequenas variações no consumo de memória que alteram os vereditos de submissões que estavam no limite da restrição (`MLE`).
