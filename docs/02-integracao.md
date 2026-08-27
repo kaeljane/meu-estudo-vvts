@@ -91,3 +91,45 @@ classDiagram
   * **Objetivo:** Garantir que o fluxo de decisão e roteamento da camada superior funcione perfeitamente antes do desenvolvimento completo da infraestrutura de baixo nível.
   * **Falhas no Tratamento de Erros da API:** Permite testar como o controlador reage quando dependências inferiores falham (ex: configurando `simularFilaCheia()` no *Stub* para garantir que a API retorne código HTTP 503 adequadamente).
   * **Incompatibilidade de Contrato de Interface:** Revela se os métodos chamados pelo controlador divergem das assinaturas definidas nas interfaces das dependências.
+ 
+## 2.3 Integração Incremental Bottom-Up (Ascendente) com uso de Drivers
+
+### 1. Diagrama de Classes UML
+
+```mermaid
+classDiagram
+    class SandboxDriver {
+        <<driver>>
+        +executarBateriaDeTestes()
+    }
+
+    class ConstraintsLoader {
+        +loadLimits(problemId) ProblemConstraints
+    }
+
+    class SandboxRunner {
+        +runInSandbox(sourceCode, constraints) ExecutionResult
+    }
+
+    class VerdictEvaluator {
+        +evaluate(metrics, constraints, userOutput, expectedOutput) Verdict
+    }
+
+    SandboxDriver ..> ConstraintsLoader : dispara
+    SandboxDriver ..> SandboxRunner : dispara
+    SandboxDriver ..> VerdictEvaluator : dispara
+    SandboxRunner ..> ConstraintsLoader : utiliza dados
+```
+### 2. Explicação Textual do Cenário
+
+* **Contexto:** Na abordagem Bottom-Up, a integração é realizada a partir dos módulos atômicos situados na base da hierarquia (`ConstraintsLoader`, `SandboxRunner` e `VerdictEvaluator`). Como a camada superior de controle (API) ainda não está integrada, projeta-se um *Driver de Teste* (`SandboxDriver`) para simular chamadas de alto nível e exercitar o comportamento desses serviços inferiores combinados.
+
+* **Como a abordagem é aplicada:**
+  * O *Driver* `SandboxDriver` é executado como uma suíte automatizada que simula a chegada de um código em C++.
+  * Ele invoca o `ConstraintsLoader` para carregar as restrições de tempo/memória do problema do disco, repassa esses dados para o `SandboxRunner` executar a compilação e isolamento do binário, e envia os artefatos resultantes para validação no `VerdictEvaluator`.
+  * O *Driver* captura a saída final para verificar se os módulos da base cooperam corretamente entre si antes da existência de uma interface web ou fila.
+
+* **Objetivo do Teste e Defeitos Revelados:**
+  * **Objetivo:** Garantir que a camada crítica de execução e avaliação atômica processe submissões sem erros de comunicação interna antes da criação da camada controladora.
+  * **Vazamento e Incompatibilidade de Streams:** Revela se a estrutura do objeto `ExecutionResult` retornado pelo `SandboxRunner` entrega o fluxo de `stdout` em formato compatível com a leitura esperada pelo `VerdictEvaluator`.
+  * **Tratamento Incorreto de Limites Operacionais:** Permite identificar se exceções lançadas pelo `ConstraintsLoader` (ex: arquivo de restrição ausente) são tratadas adequadamente pelo `SandboxRunner` sem travar a execução do SO.
